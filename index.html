@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zbiór kursów - LEVEL UP</title>
+  
+  <!-- Ikona strony w zakładce przeglądarki -->
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <!-- ====================================================================
+       FONTY GOOGLE (Space Grotesk do nagłówków + JetBrains Mono do kodu i liczb)
+       ==================================================================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Style responsywne (pomocnicze reguły dla telefonów) -->
+  <link rel="stylesheet" href="assets/responsive.css">
+
+  <!-- Biblioteki do trójwymiarowego tła Vanta 3D Waves (lokalnie w assets/) -->
+  <script src="assets/three.min.js"></script>
+  <script src="assets/vanta.waves.min.js"></script>
+
+  <style>
+    /* ====================================================================
+       1. ZMIENNE GLOBALNE (:root)
+       Tutaj definiujesz całą paletę barw strony. Zmiana w jednym miejscu
+       zmienia kolor na całej witrynie!
+       ==================================================================== */
+    :root {
+      --bg: #05050a;                  /* Główne ciemne tło strony */
+      --bg2: #0a0a14;                 /* Nieco jaśniejsze tło dla modułów i kafli */
+      --panel: rgba(255,255,255,.035);/* Półprzezroczyste tło paneli (efekt szkła) */
+      --line: rgba(255,255,255,.09);  /* Bardzo subtelne obramowanie elementów */
+      --text: #eceaf4;                /* Główny kolor czytelnego tekstu */
+      --dim: #8e8ca3;                 /* Przyciemniony tekst opisów i etykiet */
+      --vio: #8b5cf6;                 /* Akcent fioletowy (neon purple) */
+      --cyan: #22d3ee;                /* Akcent błękitny (cyber cyan) */
+      --pink: #f472b6;                /* Akcent różowy (hot pink) */
+      --lime: #a3e635;                /* Akcent limonkowy (toxic green) */
+      --mono: "JetBrains Mono", monospace;
+      --disp: "Space Grotesk", sans-serif;
+    }
+
+    /* Reset domyślnych stylów przeglądarki */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 17.5px; scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      font-family: var(--disp);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+    ::selection { background: var(--vio); color: #fff; }
+    a { color: inherit; text-decoration: none; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+
+    /* ====================================================================
+       2. WARSTWY EFEKTÓW WIZUALNYCH W TLE (FALE 3D, ZIARNO, WINIETA, PASEK)
+       ==================================================================== */
+    #vanta-bg {
+      position: fixed; inset: 0; z-index: 0; width: 100vw; height: 100vh;
+    }
+    .bg-noise {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+    }
+    .bg-vignette {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+    }
+    #progress {
+      position: fixed; top: 0; left: 0; height: 2px; width: 0%; z-index: 1000;
+      background: linear-gradient(90deg, var(--vio), var(--cyan));
+    }
+
+    /* ====================================================================
+       3. PASEK NAWIGACJI (SITE HEADER / NAVBAR)
+       Zostaje przyklejony do góry ekranu dzięki 'position: sticky'.
+       ==================================================================== */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: 14px max(4vw, calc((100vw - 1400px)/2));
+      background: rgba(5,5,10,.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono); font-size: .95rem; letter-spacing: .06em;
+    }
+    .brand-logo { font-weight: 700; font-size: 1.05rem; letter-spacing: -.02em; display: flex; align-items: center; gap: 10px; }
+    .brand-logo .status-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 14px var(--lime); animation: pulse 2.4s infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+    .brand-logo small { color: var(--dim); font-weight: 400; }
+    .nav-menu { display: flex; gap: 24px; align-items: center; }
+    .nav-menu a { color: var(--dim); text-transform: uppercase; transition: color .2s; font-size: 0.85rem; }
+    .nav-menu a:hover { color: var(--cyan); }
+
+    /* Główny kontener o stałej maksymalnej szerokości */
+    .site-container { max-width: 1400px; margin: auto; padding: 0 4vw; position: relative; z-index: 5; }
+
+    /* ====================================================================
+       4. SEKCJA GŁÓWNA (HERO)
+       ==================================================================== */
+    .hero-section {
+      min-height: calc(100vh - 70px);
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 6rem 0 4rem; position: relative;
+    }
+    .hero-badge {
+      font-family: var(--mono); font-size: .9rem; color: var(--cyan);
+      letter-spacing: .2em; text-transform: uppercase; margin-bottom: 1.4rem;
+    }
+    .hero-badge::before { content: "// "; color: var(--vio); font-weight: 700; }
+    .hero-section h1 {
+      font-size: clamp(2.4rem, 6.2vw, 5.8rem);
+      font-weight: 700; line-height: .98; letter-spacing: -.045em; margin-bottom: 1.6rem;
+    }
+    .hero-section h1 .text-gradient {
+      background: linear-gradient(135deg, #fff 30%, var(--vio) 85%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-section h1 .text-outline {
+      display: block; -webkit-text-stroke: 1.5px rgba(255,255,255,.45); color: transparent;
+    }
+    .hero-lead {
+      font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+      color: var(--dim); max-width: 680px; line-height: 1.6;
+    }
+    .hero-lead b { color: var(--text); font-weight: 600; }
+    .hero-actions { display: flex; gap: 1.4rem; align-items: center; flex-wrap: wrap; margin-top: 2.6rem; }
+    
+    /* Przyciski */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--text); color: var(--bg);
+      font-family: var(--mono); font-weight: 700; font-size: 1rem;
+      padding: 1rem 1.8rem; letter-spacing: .04em;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 44px rgba(139,92,246,.35); }
+    .btn-primary span { color: var(--vio); font-size: 1.1rem; }
+    .btn-ghost {
+      font-family: var(--mono); font-size: 1rem;
+      color: var(--dim); border-bottom: 1px solid var(--line);
+      padding: .55rem 0; transition: color .2s, border-color .2s;
+    }
+    .btn-ghost:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    /* Liczniki pod Hero */
+    .stats-grid {
+      display: flex; gap: clamp(1.6rem, 4vw, 4rem); flex-wrap: wrap;
+      margin-top: 4.5rem; border-top: 1px solid var(--line); padding-top: 2.2rem;
+    }
+    .stats-grid div { font-family: var(--mono); }
+    .stats-grid b {
+      display: block; font-size: clamp(1.9rem, 3.4vw, 3rem);
+      font-weight: 700; font-family: var(--disp); letter-spacing: -.04em; line-height: 1;
+    }
+    .stats-grid span { font-size: .85rem; color: var(--dim); letter-spacing: .12em; text-transform: uppercase; margin-top: .4rem; display: block; }
+    .stats-grid .stat-c1 b { color: var(--vio); }
+    .stats-grid .stat-c2 b { color: var(--cyan); }
+    .stats-grid .stat-c3 b { color: var(--pink); }
+    .stats-grid .stat-c4 b { color: var(--lime); }
+
+    /* ====================================================================
+       PRZEZROCZYSTY PASEK NA CAŁĄ SZEROKOŚĆ (TICKER TECHNOLOGII)
+       ==================================================================== */
+    .tech-ticker {
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 1.15rem 0;
+      background: rgba(255, 255, 255, 0.015);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 5;
+    }
+    .ticker-track { display: inline-block; animation: marqueeSlide 35s linear infinite; }
+    .tech-ticker span {
+      font-family: var(--mono); font-size: .95rem; letter-spacing: .25em;
+      color: var(--dim); text-transform: uppercase;
+    }
+    .tech-ticker i { color: var(--vio); font-style: normal; margin: 0 1.6rem; }
+    @keyframes marqueeSlide {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ====================================================================
+       5. FORMATOWANIE SEKCJI I TYTUŁÓW
+       ==================================================================== */
+    .course-section { padding: 6.5rem 0; position: relative; z-index: 5; }
+    .section-header { margin-bottom: 3.2rem; }
+    .section-tag { font-family: var(--mono); font-size: .85rem; color: var(--vio); letter-spacing: .2em; text-transform: uppercase; }
+    .section-title { font-size: clamp(2rem, 3.5vw, 3.2rem); font-weight: 700; letter-spacing: -.04em; margin-top: .4rem; }
+    .section-desc { color: var(--dim); font-size: 1.1rem; max-width: 650px; margin-top: .6rem; }
+
+    /* ====================================================================
+       6. FILARY TECHNOLOGICZNE (Siatka kolumn z kolorowym paskiem)
+       ==================================================================== */
+    .pillars-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+      background: var(--line); border: 1px solid var(--line);
+    }
+    .pillar-card {
+      background: var(--bg2); padding: 1.8rem 1.4rem; position: relative;
+      transition: background .25s; min-height: 220px; display: flex; flex-direction: column;
+    }
+    .pillar-card:hover { background: #101020; }
+    .pillar-card .pillar-num { font-family: var(--mono); font-size: .85rem; letter-spacing: .15em; color: var(--dim); }
+    .pillar-card h3 { font-size: 1.25rem; letter-spacing: -.03em; margin: .8rem 0 .4rem; }
+    .pillar-card p { font-size: .95rem; color: var(--dim); line-height: 1.5; flex: 1; }
+    .pillar-card .pillar-tech { font-family: var(--mono); font-size: .85rem; margin-top: 1rem; color: var(--mc, var(--cyan)); }
+    .pillar-card::after { content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 2px; background: var(--mc, var(--cyan)); }
+
+    /* ====================================================================
+       7. KARTY KURSÓW (.course-card)
+       ==================================================================== */
+    .courses-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.3rem; }
+    .course-card {
+      --ac: var(--vio);
+      position: relative; display: grid; grid-template-columns: 96px 1fr auto; gap: 1.6rem; align-items: center;
+      background: var(--panel); border: 1px solid var(--line);
+      padding: 1.8rem 2rem; overflow: hidden;
+      transition: transform .25s, border-color .25s, background .25s;
+    }
+    .course-card::before {
+      content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s; pointer-events: none;
+      background: radial-gradient(420px 200px at 12% 50%, color-mix(in srgb, var(--ac) 16%, transparent), transparent 70%);
+    }
+    .course-card:hover {
+      transform: translateY(-5px);
+      border-color: color-mix(in srgb, var(--ac) 55%, transparent);
+      background: rgba(255,255,255,.05);
+    }
+    .course-card:hover::before { opacity: 1; }
+    .course-num { font-family: var(--mono); font-weight: 700; font-size: 2.5rem; color: var(--ac); letter-spacing: -.06em; line-height: 1; }
+    .course-num small { display: block; font-size: .75rem; font-weight: 400; letter-spacing: .18em; color: var(--dim); margin-top: .5rem; text-transform: uppercase; }
+    .course-body h3 { font-size: clamp(1.2rem, 1.8vw, 1.55rem); letter-spacing: -.03em; line-height: 1.2; color: #fff; }
+    .course-body p { color: var(--dim); font-size: .95rem; margin-top: .4rem; max-width: 480px; }
+    .course-tags { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; }
+    .course-tags span {
+      font-family: var(--mono); font-size: .75rem; letter-spacing: .08em;
+      border: 1px solid var(--line); color: var(--dim); padding: .25rem .5rem; text-transform: uppercase;
+    }
+    .course-action { font-family: var(--mono); font-size: .85rem; color: var(--ac); white-space: nowrap; letter-spacing: .1em; transition: transform .25s; }
+    .course-card:hover .course-action { transform: translateX(6px); }
+
+    /* ====================================================================
+       8. NARZĘDZIA I TERMINAL KONSOLOWY
+       ==================================================================== */
+    .tools-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 3rem; align-items: start; }
+    .code-terminal { background: #0b0b16; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+    .terminal-header { display: flex; align-items: center; gap: 8px; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: .85rem; color: var(--dim); }
+    .terminal-header i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .terminal-header i:nth-child(1) { background: #ff5f57; } .terminal-header i:nth-child(2) { background: #febc2e; } .terminal-header i:nth-child(3) { background: #28c840; }
+    .terminal-header span { margin-left: 10px; }
+    .code-terminal pre { padding: 1.4rem 1.5rem; font-family: var(--mono); font-size: .92rem; line-height: 1.8; color: #c9c7dd; overflow-x: auto; }
+    .code-terminal .c { color: #5b5970; } .code-terminal .g { color: var(--lime); } .code-terminal .v { color: var(--vio); } .code-terminal .cy { color: var(--cyan); }
+
+    /* Notatki techniczne obok terminala */
+    .tools-notes { display: grid; gap: 1.2rem; }
+    .tool-card { border-left: 2px solid var(--vio); padding: .3rem 0 .3rem 1.2rem; }
+    .tool-card b { display: block; font-size: 1.05rem; margin-bottom: .2rem; }
+    .tool-card p { color: var(--dim); font-size: .95rem; line-height: 1.5; }
+    .tool-card code { font-family: var(--mono); font-size: .88em; color: var(--cyan); background: rgba(34,211,238,.08); padding: 1px 6px; }
+
+    /* ====================================================================
+       9. HARMONOGRAM KURSU (Siatka tygodni)
+       ==================================================================== */
+    .schedule-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+    .schedule-card { background: var(--bg2); padding: 1.5rem 1.2rem; }
+    .schedule-card b { font-family: var(--mono); font-size: .88rem; color: var(--cyan); letter-spacing: .1em; }
+    .schedule-card h4 { font-size: 1.02rem; margin: .6rem 0 .4rem; letter-spacing: -.02em; line-height: 1.3; }
+    .schedule-card p { font-size: .9rem; color: var(--dim); line-height: 1.5; }
+    .schedule-card .schedule-tag { display: inline-block; margin-top: .8rem; font-family: var(--mono); font-size: .75rem; color: var(--vio); border: 1px solid rgba(139,92,246,.4); padding: .2rem .5rem; }
+
+    /* ====================================================================
+       10. SEKCJA TWÓRCY / AUTORZY (Wyróżniony Box)
+       ==================================================================== */
+    .authors-box {
+      border: 1px solid var(--line);
+      background: linear-gradient(160deg, rgba(139,92,246,.12), rgba(34,211,238,.05) 60%, transparent);
+      padding: 3.5rem;
+    }
+    .authors-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 3.5rem; align-items: start; }
+    .authors-list { list-style: none; display: grid; gap: 1rem; margin-top: 1.5rem; }
+    .authors-list li { position: relative; padding-left: 1.6rem; color: var(--dim); font-size: 1rem; }
+    .authors-list li::before { content: '→'; position: absolute; left: 0; color: var(--cyan); font-weight: 700; font-family: var(--mono); }
+
+    /* Animacja pojawiania się */
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity .6s ease-out, transform .6s ease-out; }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    /* Stopka */
+    footer { border-top: 1px solid var(--line); padding: 3rem 0; margin-top: 5rem; font-family: var(--mono); font-size: .85rem; color: var(--dim); position: relative; z-index: 5; }
+    .footer-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .footer-brand { font-weight: 700; color: var(--text); }
+    .footer-brand span { color: var(--vio); }
+
+    /* RWD dla tabletów i telefonów */
+    @media (max-width: 1024px) {
+      .pillars-grid, .schedule-grid { grid-template-columns: repeat(2, 1fr); }
+      .tools-grid, .authors-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .courses-grid { grid-template-columns: 1fr; }
+      .course-card { grid-template-columns: 70px 1fr; }
+      .course-action { display: none; }
+      .pillars-grid, .schedule-grid { grid-template-columns: 1fr; }
+      .authors-box { padding: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====================================================================
+       WARSTWY TŁA (Efekty 3D Vanta Waves, Ziarno SVG, Winieta, Pasek)
+       Te elementy nie mają treści – odpowiadają w 100% za futurystyczny klimat.
+       ==================================================================== -->
+  <!-- 1. Interaktywne tło trójwymiarowych fal 3D Vanta Waves -->
+  <div id="vanta-bg"></div>
+
+  <!-- 2. Subtelny filtr szumu analogowego (SVG Noise) -->
+  <div class="bg-noise"></div>
+
+  <!-- 3. Winieta kinowa przyciemniająca brzegi ekranu -->
+  <div class="bg-vignette"></div>
+
+  <!-- 4. Neonowy pasek postępu czytania strony na samej górze (0% -> 100%) -->
+  <div id="progress"></div>
+
+
+  <!-- ====================================================================
+       GÓRNY PASEK NAWIGACJI (SITE HEADER / NAVBAR)
+       Zostaje przyklejony do góry ekranu dzięki 'position: sticky'.
+       ==================================================================== -->
+  <header class="site-header">
+    <!-- Logo z pulsującą zieloną diodą statusu (.status-dot) -->
+    <a href="#" class="brand-logo">
+      <span class="status-dot" title="Serwer online"></span>
+      <span id="brand-title">LEVEL UP</span>
+      <small>// SKN UNIWERSYTETU RZESZOWSKIEGO</small>
+    </a>
+
+    <!-- Menu nawigacyjne spójnie podpięte pod identyfikatory sekcji -->
+    <nav class="nav-menu">
+      <a href="#filary">Wstęp</a>
+      <a href="#kursy">Kursy</a>
+      <a href="#narzedzia">Narzędzia</a>
+      <a href="#harmonogram">Harmonogram</a>
+      <a href="#autorzy">Autorzy</a>
+    </nav>
+  </header>
+
+
+  <main>
+    <!-- ====================================================================
+         SEKCJA 1: HERO (Wizytówka Twojego kursu)
+         Duży, wyrazisty nagłówek z podwójnym stylem (gradient + transparentny obrys).
+         ==================================================================== -->
+    <section class="site-container hero-section">
+      <!-- Tag techniczny z przedrostkiem // -->
+      <div class="hero-badge">Strona początkowa</div>
+
+      <!-- Tytuł kursu:
+           .text-gradient = gradientowy, świecący napis
+           .text-outline  = obrysowany, przezroczysty napis w stylu cyberpunk/tech -->
+      <h1>
+        <span class="text-gradient">Praktyczny Zbiór Kursów</span>
+        <span class="text-outline">Gamedev</span>
+      </h1>
+
+      <!-- Wprowadzenie z jaśniejszymi elementami pogrubionymi <b> -->
+      <p class="hero-lead">
+        Strona edukacyjna stworzona przez członków <b>SKN LEVEL UP</b>. Jest to miejsce umożliwiające dzielenie się swoimi umiejętnościami z zakresu <b>gamedevu</b> i <b>pokrewnych dziedzin</b>.
+      </p>
+
+      <!-- Przyciski akcji (CTA) -->
+      <div class="hero-actions">
+        <!-- Główny przycisk kierujący do katalogu kursów -->
+        <a href="#kursy" class="btn-primary">Rozpocznij naukę <span>↓</span></a>
+        <!-- Przycisk pomocniczy kierujący do harmonogramu -->
+        <a href="#harmonogram" class="btn-ghost">Zobacz harmonogram ↗</a>
+      </div>
+
+      <!-- 4 Liczniki statystyk pod nagłówkiem (stat-c1=fiolet, stat-c2=cyan, stat-c3=róż, stat-c4=limonka) -->
+      <div class="stats-grid">
+        <div class="stat-c1">
+          <b>2</b>
+          <span>Kursy</span>
+        </div>
+        <div class="stat-c2">
+          <b>0</b>
+          <span>Lekcje</span>
+        </div>
+        <div class="stat-c3">
+          <b>2</b>
+          <span>Autorzy</span>
+        </div>
+        <div class="stat-c4">
+          <b>0</b>
+          <span>Projekty końcowe</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         PRZEZROCZYSTY PASEK NA CAŁĄ SZEROKOŚĆ STRONY (TECH TICKER)
+         Rozciąga się na 100% szerokości ekranu, z delikatnym tłem i przesuwającym się tekstem.
+         ==================================================================== -->
+    <div class="tech-ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <span> Unity <i>•</i>  <i>•</i> Godot <i>•</i> Blender <i>•</i> Canva <i>•</i> Photoshop <i>•</i> Unity <i>•</i> Godot <i>•</i> Blender <i>•</i> Canva <i>•</i> Photoshop <i>•</i> Unity <i>•</i> Godot <i>•</i> Blender <i>•</i> Canva <i>•</i> Photoshop <i>•</i></span>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         SEKCJA 2: FILARY TECHNOLOGICZNE (Wstęp do struktury nauczania)
+         ==================================================================== -->
+    <section class="site-container course-section" id="filary">
+      <div class="section-header">
+        <div class="section-tag">// STRUKTURA NAUCZANIA</div>
+        <h2 class="section-title">Filary Technologiczne</h2>
+        <p class="section-desc">W trakcie przerabiania kursów</p>
+      </div>
+
+      <div class="pillars-grid">
+        <div class="pillar-card" style="--mc: var(--vio);">
+          <div class="pillar-num">FILAR 01</div>
+          <h3>Unity Ecosystem</h3>
+          <p>Język i programowanie, Środowisko i silnik, Fizyka i mechaniki, Renderowanie i oprawa, Optymalizacja i wdrożenie</p>
+          <div class="pillar-tech">Unity, C#</div>
+        </div>
+
+        <!-- FILAR 2: Błękitny pasek (--mc: var(--cyan)) -->
+        <div class="pillar-card" style="--mc: var(--cyan);">
+          <div class="pillar-num">FILAR 02</div>
+          <h3>Godot Engine</h3>
+          <p>Języki skryptowe, Architektura silnika, Gameplay i fizyka, Światło, 2D/3D i UI</p>
+          <div class="pillar-tech">Godot, GDScript / C#</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SEKCJA 3: KATALOG KURSÓW
+         ==================================================================== -->
+    <section class="site-container course-section" id="kursy">
+      <div class="section-header">
+        <div class="section-tag">// ŚCIEŻKA PRAKTYCZNA</div>
+        <h2 class="section-title">Katalog Dostępnych Kursów</h2>
+        <p class="section-desc">Kliknij w wybrany kurs, aby przejść do materiałów teoretycznych, kodu źródłowego i zadań.</p>
+      </div>
+
+      <div class="courses-grid">
+        <a href="" class="course-card reveal" style="--ac: var(--vio);">
+          <!-- Lewa kolumna karty: duży numer -->
+          <div class="course-num">
+            01
+            <small>KURS</small>
+          </div>
+          <!-- Środkowa kolumna: Tytuł, opis i tagi -->
+          <div class="course-body">
+            <h3>Podstawy silnika Unity</h3>
+            <p>Konfiguracja środowiska venv, tworzenie endpointów HTTP i obsługa pierwszych zapytań klienta.</p>
+            <div class="course-tags">
+              <span>Unity</span>
+              <span>C#</span>
+              <span>Blender</span>
+            </div>
+          </div>
+          <!-- Prawa kolumna: animowana strzałka -->
+          <div class="course-action">WEJDŹ →</div>
+        </a>
+
+        <a href="" class="course-card reveal" style="--ac: var(--cyan);">
+          <div class="course-num">
+            02
+            <small>KURS</small>
+          </div>
+          <div class="course-body">
+            <h3>Podstawy silnika Godot</h3>
+            <p>Modelowanie relacji w SQLite/PostgreSQL, migracje bazy i transakcyjność operacji.</p>
+            <div class="course-tags">
+              <span>Godot</span>
+              <span>GDScript</span>
+              <span>C#</span>
+              <span>Blender</span>
+            </div>
+          </div>
+          <div class="course-action">WEJDŹ →</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SEKCJA 4: NARZĘDZIA I PRZYDATNE LINKI
+         ==================================================================== -->
+    <section class="site-container course-section" id="narzedzia">
+      <div class="section-header">
+        <div class="section-tag">// ZANIM ZACZNIESZ</div>
+        <h2 class="section-title">Przydatne linki</h2>
+      </div>
+
+      <div class="tools-grid">
+        <!-- Lewa kolumna: Okno terminala -->
+        <div class="code-terminal reveal">
+          <div class="terminal-header">
+            <i></i><i></i><i></i>
+            <span>bash://pobierz-zanim-rozpoczniesz</span>
+          </div>
+          <pre><code><span class="c"># 1. Silnik Unity</span>
+<span class="v"><a href="https://unity.com/products/unity-personal" target="_blank">https://unity.com/products/unity-personal</a></span>
+
+<span class="c"># 2. Silnik Godot</span>
+<span class="cy"><a href="https://godotengine.org/pl/" target="_blank">https://godotengine.org/pl/</a></span>
+
+<span class="c"># 3. Uzupełnić</span>
+<span class="c"># Dodać środowiska kodowania do kursów</span></code></pre>
+        </div>
+
+        <!-- Prawa kolumna: Notatki z lewą krawędzią (Callouts) -->
+        <div class="tools-notes reveal">
+          <div class="tool-card" style="border-color: var(--cyan);">
+            <b>Silnik Unity</b>
+            <p>Opis </p>
+          </div>
+          <div class="tool-card" style="border-color: var(--vio);">
+            <b>Silnik Godot</b>
+            <p><code>opis</code></p>
+          </div>
+          <div class="tool-card" style="border-color: var(--lime);">
+            <b>JetBrains</b>
+            <p>Opis</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SEKCJA 5: HARMONOGRAM LEKCJI
+         ==================================================================== -->
+    <section class="site-container course-section" id="harmonogram">
+      <div class="section-header">
+        <div class="section-tag">// CZĘSTOTLIWOŚĆ</div>
+        <h2 class="section-title">Harmonogram lekcji</h2>
+        <p class="section-desc">Sprawdź, jakie kursy są obecnie tworzone i kiedy się ukazują.</p>
+      </div>
+
+      <div class="schedule-grid">
+        <div class="schedule-card reveal">
+          <b>Wkrótce start</b>
+          <h4>Podstawy Unity</h4>
+          <p>Lekcja raz na <b>1-2</b> tygodnie</p>
+          <span class="schedule-tag">MODUŁ 1</span>
+        </div>
+
+        <div class="schedule-card reveal">
+          <b>Wkrótce start</b>
+          <h4>Podstawy Godot</h4>
+          <p>Lekcja raz na <b>1-2</b> tygodnie</p>
+          <span class="schedule-tag">MODUŁ 2</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SEKCJA 6: AUTORZY PLATFORMY
+         ==================================================================== -->
+    <section class="site-container course-section" id="autorzy">
+      <div class="authors-box reveal">
+        <div class="authors-grid">
+          <div>
+            <div class="section-tag">// TWÓRCY</div>
+            <h2 class="section-title">Autorzy platformy</h2>
+            <p style="color: var(--dim); margin-top: .8rem; font-size: 1.05rem;">
+              W tworzenie strony oraz przygotowywanie materiałów edukacyjnych angażuje się wielu członków SKN LEVEL UP.
+            </p>
+          </div>
+          <div>
+            <ul class="authors-list">
+              <li><b>Bartosz Bieszczak</b> - Zaprojektowanie struktury strony / Kurs Unity</li>
+              <li><b>Justyn Kiresztura </b> - Kurs Godot</li>
+              <li><b>mgr inż. Aleksander Wojtowicz</b> - Strona wizualna platformy</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+
+  <!-- ====================================================================
+       STOPKA STRONY (FOOTER)
+       ==================================================================== -->
+  <footer>
+    <div class="site-container footer-content">
+      <div class="footer-brand"><span id="foot-name">LEVEL UP</span><span>://</span>STUDENCKIE KOŁO NAUKOWE</div>
+      <div>Zaprojektowano dla członków i grup współpracujących • 2026</div>
+    </div>
+  </footer>
+
+
+  <!-- ====================================================================
+       SKRYPTY JS (EFEKTY WIZUALNE)
+       ==================================================================== -->
+  <script>
+    /* 1. Trójwymiarowe falowanie Vanta Waves reagujące na ruch kursora */
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        VANTA.WAVES({
+          el: "#vanta-bg",
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200.00,
+          minWidth: 200.00,
+          scale: 1.00,
+          scaleMobile: 1.00,
+          color: 0x140f30,       // Głęboki fiolet pod falami 3D
+          shininess: 40.00,      // Połysk świetlny
+          waveHeight: 18.00,     // Wysokość fal
+          waveSpeed: 0.75,       // Prędkość falowania
+          zoom: 0.85
+        });
+      } catch (err) {
+        console.warn("Vanta Waves:", err);
+      }
+    });
+
+    /* 2. Pasek postępu scrollowania (#progress) */
+    (function () {
+      const bar = document.getElementById('progress');
+      if (!bar) return;
+      addEventListener('scroll', () => {
+        const max = document.documentElement.scrollHeight - innerHeight;
+        bar.style.width = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
+      }, { passive: true });
+    })();
+
+    /* 3. Płynne ujawnianie elementów przy scrollowaniu (.reveal) */
+    (function () {
+      const io = new IntersectionObserver(entries => {
+        for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      }, { threshold: .1, rootMargin: '10% 0px 10% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    })();
+  </script>
+</body>
+</html>

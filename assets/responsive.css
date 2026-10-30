@@ -1,0 +1,41 @@
+/* Elementy siatki mogą się zwężać; długi kod przewija się w swoim bloku. */
+:where(main,section,header,footer) :where(div,article,aside,a,span){min-width:0}
+pre{max-width:100%;box-sizing:border-box}
+p,li,h1,h2,h3,a{overflow-wrap:anywhere}
+.matrix-wrap{max-width:100%}
+#hero-fx{background:transparent}
+html{scrollbar-gutter:stable;scroll-padding-top:6rem}
+img,svg,canvas{max-width:100%}
+pre,.table-wrap,.matrix-wrap{overflow-x:auto}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+:where(a,button,input,select,textarea,summary):focus-visible{outline:3px solid currentColor;outline-offset:4px}
+/* Czytanie i przejście do sekcji nie zależą od animacji ani JavaScriptu. */
+.reveal,.fx main section,.fx body>section{opacity:1!important;transform:none!important;animation:none!important;transition:none!important}
+#net,#glow,#dust,#hero-fx,#nn-fx,canvas[aria-hidden="true"]{pointer-events:none}
+.ill-note{overflow-wrap:anywhere}
+.course-start{position:relative;z-index:3;max-width:1180px;margin:2rem auto;padding:1.5rem 24px;border-block:1px solid currentColor;font-size:1rem;line-height:1.65}
+.course-start h2{font-family:inherit;font-size:1.35rem;font-weight:700;line-height:1.3;margin:0 0 .8rem}
+.course-start p{max-width:85ch;margin:.6rem 0}
+.course-start .files{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;margin-top:.8rem}
+.course-start a{text-underline-offset:.2em}
+@media(max-width:760px){
+  html{scroll-padding-top:9rem}
+  .site-header,.topbar{flex-wrap:wrap}
+  .nav-menu,.topnav{display:flex;gap:.6rem 1rem;flex-wrap:wrap}
+  .nav-menu,.topnav,.navlinks{max-width:100%}
+  .hero-section h1 .text-outline,.hero h1 .out{white-space:normal}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto!important}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}
+  #net,#glow,#dust,#hero-fx,#nn-fx,.vec-fx,.bus-fx,.arch-dot{display:none!important}
+  .hero .sub,.hero .cta,.hero .terminal,.hero .scroll-cue{opacity:1!important;transform:none!important}
+  .hero h1 span{transform:none!important}
+}
+
+.hero .sub,.hero .cta,.hero .terminal,.hero .scroll-cue{opacity:1!important;transform:none!important;animation:none!important}
+.hero h1 .row>i{transform:none!important;animation:none!important}
+
+body{overflow-x:clip!important}
+html{overflow-x:clip}
